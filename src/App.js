@@ -1,25 +1,109 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import React, { useState } from "react";
+import "./App.css";
+import { BrowserRouter as Router, Switch, Route, Link } from "react-router-dom";
+import Header from "./components/Header/Header";
+import Banner from "./components/Banner/Banner";
+import Foods from "./components/Foods/Foods";
+import FoodDetail from "./components/FoodDetail/FoodDetail";
+import SignUp from "./components/SignUp/SignUp";
+import Shipment from "./components/Shipment/Shipment";
+import Order from "./components/Order/Order";
+import Footer from "./components/Footer/Footer";
+import Features from "./components/Features/Features";
+import NotFound from "./components/NotFound/NotFound";
+import SearchResult from "./components/SearchResult/SearchResult";
+import { AuthProvider, PrivateRoute } from "./components/SignUp/useAuth";
 
 function App() {
+  const [cart, setCart] = useState([]);
+  const [deliveryDetails, setDeliveryDetails] = useState({
+    todoor: null,
+    road: null,
+    flat: null,
+    businessname: null,
+    address: null
+  });
+  const deliveryDetailsHandler = data => {
+    setDeliveryDetails(data);
+  };
+  const clearCart = () => {
+    setCart([]);
+  };
+
+  const cartHandler = data => {
+    const itemAdded = cart.find(crt => crt.id == data.id);
+    const newCart = [...cart, data];
+    setCart(newCart);
+    if (itemAdded) {
+      const remainingCarts = cart.filter(crt => crt.id != data);
+      setCart(remainingCarts);
+    } else {
+      const newCart = [...cart, data];
+      setCart(newCart);
+    }
+  };
+
+  const checkOutItemHandler = (productId, productQuantity) => {
+    const newCart = cart.map(item => {
+      if (item.id == productId) {
+        item.quantity = productQuantity;
+      }
+      return item;
+    });
+
+    const filteredCart = newCart.filter(item => item.quantity > 0);
+    setCart(filteredCart);
+  };
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <AuthProvider>
+      <Router>
+        <div className="main">
+          <Switch>
+            <Route exact path="/">
+              <Header cart={cart}></Header>
+              <Banner></Banner>
+              <Foods cart={cart}></Foods>
+              <Features></Features>
+              <Footer></Footer>
+            </Route>
+            <Route path="/food/:id">
+              <Header cart={cart}></Header>
+              <FoodDetail cart={cart} cartHandler={cartHandler}></FoodDetail>
+              <Footer></Footer>
+            </Route>
+            <Route path="/search=:searchQuery">
+              <Header cart={cart}></Header>
+              <Banner></Banner>
+              <SearchResult></SearchResult>
+              <Features></Features>
+              <Footer></Footer>
+            </Route>
+            <PrivateRoute path="/checkout">
+              <Header cart={cart}></Header>
+              <Shipment
+                deliveryDetails={deliveryDetails}
+                deliveryDetailsHandler={deliveryDetailsHandler}
+                cart={cart}
+                clearCart={clearCart}
+                checkOutItemHandler={checkOutItemHandler}
+              ></Shipment>
+              <Footer></Footer>
+            </PrivateRoute>
+            <PrivateRoute path="/order-complete">
+              <Header cart={cart}></Header>
+              <Order deliveryDetails={deliveryDetails}></Order>
+              <Footer></Footer>
+            </PrivateRoute>
+            <Route path="/login">
+              <SignUp></SignUp>
+            </Route>
+            <Route path="*">
+              <NotFound></NotFound>
+            </Route>
+          </Switch>
+        </div>
+      </Router>
+    </AuthProvider>
   );
 }
 
