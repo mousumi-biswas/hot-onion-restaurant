@@ -1,16 +1,22 @@
 import React, { useState, useEffect } from "react";
 import "./Foods.css";
-import AllFoods from "../../Data/foods.json";
+
 import FoodItem from "../FoodItem/FoodItem";
 
 const Foods = () => {
   const [foods, setFoods] = useState([]);
+
   useEffect(() => {
-    setFoods(AllFoods);
-  }, []);
+    fetch("http://localhost:4200/foods")
+      .then((res) => res.json())
+      .then((data) => {
+        setFoods(data);
+      })
+      .catch((err) => console.log(err));
+  }, [foods.length]);
 
   const [selectedFoodType, setSelectedFoodType] = useState("Breakfast");
-  const selectedFoods = foods.filter(food => food.type === selectedFoodType);
+  const selectedFoods = foods.filter((food) => food.type === selectedFoodType);
 
   return (
     <section className="food-area">
@@ -62,7 +68,7 @@ const Foods = () => {
         </nav>
 
         <div className="row">
-          {selectedFoods.map(food => (
+          {selectedFoods.map((food) => (
             <FoodItem food={food}></FoodItem>
           ))}
         </div>

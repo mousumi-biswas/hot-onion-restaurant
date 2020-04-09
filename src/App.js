@@ -12,30 +12,57 @@ import Footer from "./components/Footer/Footer";
 import Features from "./components/Features/Features";
 import NotFound from "./components/NotFound/NotFound";
 import SearchResult from "./components/SearchResult/SearchResult";
+import Inventory from "./components/Inventory/Inventory";
 import { AuthProvider, PrivateRoute } from "./components/SignUp/useAuth";
 
 function App() {
+  const [orderId, setOrderId] = useState(null);
   const [cart, setCart] = useState([]);
+  const [userEmail, setUserEmail] = useState(null);
   const [deliveryDetails, setDeliveryDetails] = useState({
     todoor: null,
     road: null,
     flat: null,
     businessname: null,
-    address: null
+    address: null,
   });
-  const deliveryDetailsHandler = data => {
+  const deliveryDetailsHandler = (data) => {
     setDeliveryDetails(data);
   };
+  //const clearCart = () => {
+  //setCart([]);
+  //};
+
+  const Email = (email) => {
+    setUserEmail(email);
+  };
+
   const clearCart = () => {
+    const orderedItems = cart.map((cartItem) => {
+      return { food_id: cartItem.id, quantity: cartItem.quantity };
+    });
+
+    const orderDetailsData = { orderedItems, deliveryDetails };
+    fetch("http://localhost:4200/submitOrder", {
+      method: "POST",
+      headers: {
+        "Content-type": "application/json",
+      },
+      body: JSON.stringify(orderDetailsData),
+    })
+      .then((res) => res.json())
+      .then((data) => setOrderId(data._id));
+    console.log(orderId);
+
     setCart([]);
   };
 
-  const cartHandler = data => {
-    const itemAdded = cart.find(crt => crt.id == data.id);
+  const cartHandler = (data) => {
+    const itemAdded = cart.find((crt) => crt.id == data.id);
     const newCart = [...cart, data];
     setCart(newCart);
     if (itemAdded) {
-      const remainingCarts = cart.filter(crt => crt.id != data);
+      const remainingCarts = cart.filter((crt) => crt.id != data);
       setCart(remainingCarts);
     } else {
       const newCart = [...cart, data];
@@ -44,14 +71,14 @@ function App() {
   };
 
   const checkOutItemHandler = (productId, productQuantity) => {
-    const newCart = cart.map(item => {
+    const newCart = cart.map((item) => {
       if (item.id == productId) {
         item.quantity = productQuantity;
       }
       return item;
     });
 
-    const filteredCart = newCart.filter(item => item.quantity > 0);
+    const filteredCart = newCart.filter((item) => item.quantity > 0);
     setCart(filteredCart);
   };
   return (
@@ -94,6 +121,12 @@ function App() {
               <Order deliveryDetails={deliveryDetails}></Order>
               <Footer></Footer>
             </PrivateRoute>
+            <Route path="/inventory">
+              <Header cart={cart} />
+              <Inventory></Inventory>
+              <Footer />
+            </Route>
+
             <Route path="/login">
               <SignUp></SignUp>
             </Route>

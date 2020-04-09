@@ -1,29 +1,57 @@
-import React from "react";
-import "./Shipment.css";
+import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { Link } from "react-router-dom";
+import "./Shipment.css";
+import { loadStripe } from "@stripe/stripe-js";
+import { Elements } from "@stripe/react-stripe-js";
 
-const Shipment = props => {
-  const { register, handleSubmit, errors } = useForm();
-  const onSubmit = data => props.deliveryDetailsHandler(data);
-  const { todoor, road, flat, businessname, address } = props.deliveryDetails;
-  const reduceQuantity = pId => {
-    props.checkOutItemHandler(pId);
+import Payment from "../Payment/Payment";
+import { useAuth } from "../SignUp/useAuth";
+
+const Shipment = (props) => {
+  const auth = useAuth();
+  console.log(auth);
+  const stripePromise = loadStripe(
+    "pk_test_wAHVjRoooqp82MRiaNHg4E9z00MCOpzvRk"
+  );
+  const [paid, setPaid] = useState(null);
+  const markAsPaid = (paymentInfo) => {
+    setPaid(paymentInfo);
   };
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
+  const { register, handleSubmit, errors } = useForm();
+
+  const onSubmit = (data) => {
+    props.deliveryDetailsHandler(data);
+    //props.Email(auth.user.email);
+  };
+  const { todoor, road, flat, businessname, address } = props.deliveryDetails;
+
   const subTotal = props.cart.reduce((acc, crr) => {
     return acc + crr.price * crr.quantity;
   }, 0);
-
   const totalQuantity = props.cart.reduce((acc, crr) => {
     return acc + crr.quantity;
   }, 0);
   const tax = (subTotal / 100) * 5;
   const deliveryFee = totalQuantity && 2;
   const grandTotal = subTotal + tax + deliveryFee;
+
   return (
-    <div className="shipment container my-5">
+    <div className="shipment container pt-5 my-5">
       <div className="row">
-        <div className="col-md-5">
+        <div
+          style={{
+            display:
+              todoor && road && flat && businessname && address
+                ? "none"
+                : "block",
+          }}
+          className="col-md-5"
+        >
           <h4>Edit Delivery Details</h4>
           <hr />
           <form onSubmit={handleSubmit(onSubmit)} className="py-5">
@@ -32,7 +60,7 @@ const Shipment = props => {
                 name="todoor"
                 className="form-control"
                 ref={register({ required: true })}
-                defaultValue="Delivery To Door"
+                defaultValue={todoor}
                 placeholder="Delivery To Door"
               />
               {errors.todoor && (
@@ -44,6 +72,7 @@ const Shipment = props => {
                 name="road"
                 className="form-control"
                 ref={register({ required: true })}
+                defaultValue={road}
                 placeholder="Road No"
               />
               {errors.road && (
@@ -55,6 +84,7 @@ const Shipment = props => {
                 name="flat"
                 className="form-control"
                 ref={register({ required: true })}
+                defaultValue={flat}
                 placeholder="Flat, Suite or Floor"
               />
               {errors.flat && (
@@ -66,6 +96,7 @@ const Shipment = props => {
                 name="businessname"
                 className="form-control"
                 ref={register({ required: true })}
+                defaultValue={businessname}
                 placeholder="Business name"
               />
               {errors.businessname && (
@@ -80,7 +111,9 @@ const Shipment = props => {
                 className="form-control"
                 cols="30"
                 rows="2"
-              ></textarea>
+              >
+                {address}
+              </textarea>
               {errors.address && (
                 <span className="error">Password is required</span>
               )}
@@ -93,15 +126,29 @@ const Shipment = props => {
             </div>
           </form>
         </div>
+        <div
+          style={{
+            display:
+              todoor && road && flat && businessname && address
+                ? "block"
+                : "none",
+          }}
+          className="col-md-5"
+        >
+          <Elements stripe={stripePromise}>
+            <Payment markAsPaid={markAsPaid} />
+          </Elements>
+        </div>
         <div className="offset-md-2 col-md-5">
           <div className="restaurant-info mb-5">
             <h4>
-              Form <strong> Western Grills</strong>
+              Form <strong> Western Grill</strong>
             </h4>
             <h5>Arriving in 20-30 min</h5>
             <h5>107 Rd No 9</h5>
           </div>
-          {props.cart.map(item => (
+
+          {props.cart.map((item) => (
             <div className="single-checkout-item mb-3 bg-light rounded d-flex align-items-center justify-content-between p-3">
               <img width="100px" src={item.images[0]} alt="" />
               <div>
@@ -109,9 +156,33 @@ const Shipment = props => {
                 <h4 className="text-danger">${item.price.toFixed(2)}</h4>
                 <p>Delivery free</p>
               </div>
-              <div className="cart-controller ml-3 btn">
-                <button className="btn">-</button> {item.quantity}{" "}
-                <button className="btn">+</button>
+              <div className="checkout-item-button ml-3 btn">
+                <button
+                  onClick={() =>
+                    props.checkOutItemHandler(item.id, item.quantity + 1)
+                  }
+                  className="btn font-weight-bolder"
+                >
+                  +
+                </button>
+                <button className="btn bg-white rounded">
+                  {item.quantity}
+                </button>
+
+                {item.quantity > 0 ? (
+                  <button
+                    className="btn font-weight-bolder"
+                    onClick={() =>
+                      props.checkOutItemHandler(item.id, item.quantity - 1)
+                    }
+                  >
+                    -
+                  </button>
+                ) : (
+                  <button disabled className="btn font-weight-bolder">
+                    -
+                  </button>
+                )}
               </div>
             </div>
           ))}
@@ -131,7 +202,7 @@ const Shipment = props => {
               <span>Total</span> <span>${grandTotal.toFixed(2)}</span>
             </p>
             {totalQuantity ? (
-              todoor && road && flat && businessname && address ? (
+              paid ? (
                 <Link to="/order-complete">
                   <button
                     onClick={() => props.clearCart()}
