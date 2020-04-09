@@ -8,7 +8,7 @@ function Features(props) {
   const [features, setFeatures] = useState([]);
 
   useEffect(() => {
-    fetch("http://localhost:4200/features")
+    fetch("https://glacial-citadel-55473.herokuapp.com/features")
       .then((res) => res.json())
       .then((data) => {
         setFeatures(data);

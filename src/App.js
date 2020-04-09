@@ -43,7 +43,7 @@ function App() {
     });
 
     const orderDetailsData = { orderedItems, deliveryDetails };
-    fetch("http://localhost:4200/submitOrder", {
+    fetch("https://glacial-citadel-55473.herokuapp.com/submitOrder", {
       method: "POST",
       headers: {
         "Content-type": "application/json",
